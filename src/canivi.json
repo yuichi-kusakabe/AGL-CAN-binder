@@ -1,0 +1,4 @@
+{
+	"dev_name":  "vcan0",
+	"can_map" :  "/usr/lib/afb/sample.json"
+}

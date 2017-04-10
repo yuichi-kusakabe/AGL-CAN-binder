@@ -1,0 +1,53 @@
+{
+	"RECEPTION" :
+		{
+			"STANDARD": {
+				"010" : {
+					"DLC"	: 2 ,
+					"MODE"	: "CAN_THINOUT_CHG",
+					"CYCLE"	: 200,
+					"DATA" : [
+						{
+						"POS"			: 2 ,
+						"OFFS"			: 0 ,
+						"LEN"			: 16 ,
+						"CUSTOM"		: false, 
+						"PROPERTY"		: "EngineSpeed",
+						"ZONE"			: ["Zone::None"],
+						"TYPE"			: "uint16_t",
+						"MULTI-PARAM"	: 0,
+						"ADD-PARAM"		: 0
+						}
+					]
+				},
+				"011" : {
+					"DLC"	: 2 ,
+					"MODE"	: "CAN_THINOUT_CHG",
+					"CYCLE"	: 200,
+					"DATA" : [
+						{
+						"POS"			: 2 ,
+						"OFFS"			: 0 ,
+						"LEN"			: 16 ,
+						"CUSTOM"		: false, 
+						"PROPERTY"		: "VehicleSpeed",
+						"ZONE"			: ["Zone::None"],
+						"TYPE"			: "uint16_t",
+						"MULTI-PARAM"	: 0,
+						"ADD-PARAM"		: 0
+						}
+					]
+				},
+			},
+			"EXTENDED" : {
+			}
+		}
+	,
+	"TRANSMISSION" :
+		{
+			"STANDARD": {
+			},
+			"EXTENDED" : {
+			}
+		}
+}
