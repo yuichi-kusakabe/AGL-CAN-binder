@@ -50,7 +50,6 @@ struct canivi_conf {
 const struct afb_binding_interface *afbitf;
 
 /***************************************************************************************/
-/***************************************************************************************/
 /**                                                                                   **/
 /**                                                                                   **/
 /**       SECTION: HANDLING OF CONNECTION                                             **/
@@ -79,8 +78,7 @@ int notify_property_changed(struct can_bit_t *property_info)
 	}
 	return 0;
 }
-/***************************************************************************************/
-/*
+/***************************************************************************************
  * called on an event on the CAN stream
  */
 static int on_event(sd_event_source *s, int fd, uint32_t revents, void *userdata)
@@ -101,6 +99,9 @@ static int on_event(sd_event_source *s, int fd, uint32_t revents, void *userdata
 	return 0;
 }
 
+/***************************************************************************************
+ * connect to CAN device
+ */
 static int	connection(struct canivi_conf *conf)
 {
 	int s;
@@ -161,7 +162,7 @@ static void get(struct afb_req req)
 }
 
 /**
- * get method.
+ * set method.
  */
 static void set(struct afb_req req)
 {
@@ -351,7 +352,7 @@ static void unsubscribe(struct afb_req req) {
 	else
 		afb_req_fail(req, "error", NULL);
 }
-/*
+/*************************************************************************************
  * array of the verbs exported to afb-daemon
  */
 static const struct afb_verb_desc_v1 binding_verbs[] = {

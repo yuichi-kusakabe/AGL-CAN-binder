@@ -74,7 +74,6 @@ uint64_t canvalue2host(unsigned char *data)
 	union {
 		uint64_t value64;
 		unsigned char b[BYTE_OF_FRAME]; } can_bigendian_data;
-	//memcpy(can_bigendian_data.b, data, BYTE_OF_FRAME);
 	can_bigendian_data.b[0] = data[7];
 	can_bigendian_data.b[1] = data[6];
 	can_bigendian_data.b[2] = data[5];
@@ -91,7 +90,6 @@ void host2canvalue(uint64_t v,unsigned char *outdata)
 	union {
 		uint64_t value64;
 		unsigned char b[BYTE_OF_FRAME]; } can_bigendian_data;
-	//memcpy(can_bigendian_data.b, data, BYTE_OF_FRAME);
 	can_bigendian_data.value64 = v;
 
 	outdata[7] = can_bigendian_data.b[0];

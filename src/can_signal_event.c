@@ -100,7 +100,6 @@ static int parse_candata(uint64_t can_v64, struct can_bit_t *properties, unsigne
 
 	for(i = 0; i < nProperty; i++) {
 		update_iviproperty(can_v64, property_info, timestamp);
-//RM:	parse_candata(data, property_info->next, 1, timestamp );
 		++property_info;
 	}
 	return 0;
@@ -127,7 +126,6 @@ static int parse_frame(struct can_frame *frame, struct timeval *timestamp)
 
 	if (frame->can_dlc != canid_info->dlc) {
 		WARNMSG("CAN-ID <%03X> invalid frame DLC(%d). <define dlc>=%d", targetcanid, frame->can_dlc, canid_info->dlc);
-		//goto ERROR_RETURN; /* NOT TARGET frame */
 	}
 	DBGMSG("CAN-ID <%03X> readed: %02x%02x%02x%02x %02x%02x%02x%02x", targetcanid,
 		frame->data[0], frame->data[1], frame->data[2], frame->data[3],

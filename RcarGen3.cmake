@@ -10,8 +10,7 @@ set(CMAKE_C_COMPILER ${CROSS_PREFIX}gcc --sysroot=${CROSS_TOOLCHAIN_PATH})
 set(CMAKE_CXX_COMPILER ${CROSS_PREFIX}g++)
 set(CMAKE_INCLUDE_PATH ${CROSS_TOOLCHAIN_PATH}/usr/include)
 set(CMAKE_LIBRARY_PATH ${CROSS_TOOLCHAIN_PATH}/usr/lib)
-set(CMAKE_INSTALL_PREFIX /home/Devel/AGL/AFB_CANROW/gps-nmea-sample/af-gps-binding/build)
-
+set(CMAKE_INSTALL_PREFIX /home/Devel/AGL/AFB_CANIVI/af-canivi-binding/git/AGL-CAN-binder/build)
 #set(CMAKE_FIND_ROOT_PATH ${ARMADEUS_ROOT_CTC} ${CMAKE_INCLUDE_PATH})
 
 # search for programs in the build host directories
