@@ -11,6 +11,7 @@ struct bind_event_t {
 
 extern int getSubscribedCanids(canid_t **p);
 extern struct bind_event_t *get_event(const char *name);
+extern struct bind_event_t *register_event(const char *name);
 extern void bind_event_walker(void (*handler)(struct bind_event_t *entry));
 extern int remove_event(const char *name);
 #endif

@@ -91,10 +91,7 @@ int getSubscribedCanids(canid_t **p)
 
 struct bind_event_t *get_event(const char *name)
 {
-	struct bind_event_t *evt;
 	struct bind_event_t key;
-	struct can_bit_t *property_info;
-
 	void *ent;
 #ifdef DEBUG
 	if (afbitf == NULL) {
@@ -102,36 +99,42 @@ struct bind_event_t *get_event(const char *name)
 		return NULL;
 	}
 #endif
-
 	/*
  	 * search subscribed event.
  	 */
 	key.name = name;
 	ent = tfind(&key, &bind_event_root, compare);
 	if (ent != NULL)
-		return *(struct bind_event_t **)ent;
+		return *(struct bind_event_t **)ent; /* found */
+	return NULL; /* not found */
+}
 
-	/*
- 	 * It's new event
- 	 */
-	/* check supported poropety name. */
+struct bind_event_t *register_event(const char *name)
+{
+	struct bind_event_t *evt;
+	struct can_bit_t *property_info;
+	void *ent;
+	
 	property_info = getProperty_dict(name);
 	if (property_info == NULL) {
 		ERRMSG("NOT Supported property:\"%s\".", name);
 		return NULL;
 	}
 	evt = calloc(1, sizeof(*evt));
-	if (evt == NULL)
+	if (evt == NULL) {
+		ERRMSG("not enogh memory");
 		return NULL;
+	}
 
 	evt->event = afb_daemon_make_event(afbitf->daemon, property_info->name);
 	if (evt->event.itf == NULL) {
 		free(evt);
+		ERRMSG("afb_daemon_make_event failed");
 		return NULL;
 	}
+
 	evt->name = property_info->name;
 	evt->raw_info = property_info;
-
 	ent = tsearch(evt, &bind_event_root, compare);
 	if (ent == NULL) {
 		ERRMSG("not enogh memory");

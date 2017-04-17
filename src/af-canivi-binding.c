@@ -62,7 +62,7 @@ int notify_property_changed(struct can_bit_t *property_info)
 
 	event =  get_event(property_info->name);
 	if (event == NULL) {
-		ERRMSG("Internal error: cannot get the event(\"%s\")", property_info->name);
+		DBGMSG("<IGNORE event>: event(\"%s\") is not subscribed", property_info->name);
 		return 1;
 	}
 	if (afb_event_is_valid(event->event)) {
@@ -243,8 +243,13 @@ static int  subscribe_signal(struct afb_req req, const char *name, struct json_o
 
 	event = get_event(name);
 	if (event == NULL) {
-		ERRMSG("get_event failed.");
-		return 1;
+		event = register_event(name);
+		if (event == NULL) {
+			ERRMSG("register event failed: %s", name);
+			return 1;
+		}
+	} else {
+		DBGMSG("Duplicate require: %s", name);
 	}
 	if (afb_req_subscribe(req, event->event) != 0) {
 		ERRMSG("afb_req_subscrive() is failed.");
