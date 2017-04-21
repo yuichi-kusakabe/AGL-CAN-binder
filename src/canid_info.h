@@ -42,7 +42,7 @@ union data_content_t	{
 	int16_t  int16_val;
 	uint8_t  uint8_val;
 	int8_t   int8_val;
-	bool_t     bool_val;
+	bool_t   bool_val;
 	char     *string;	/* --> *dataconv[x] */
 	struct {
 		int	 number_of_entry;

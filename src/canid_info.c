@@ -107,18 +107,6 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v)
 	unsigned int x = v;
 	int update = 0;
 	const int is_dataconvert = ((property_info->dataconv != NULL) && (property_info->nconv > x ));
-	switch( (property_info->bit_len + (BITS_OF_BYTE-1)) & ~(BITS_OF_BYTE - 1))
-	{
-	case  8:
-	case 16:
-	case 32:
-		break;
-	default:
-		ERRMSG("Invalid bit-len :%d", property_info->bit_len);
-		return 0;
-		break;
-	}
-
 	switch(property_info->var_type) {
 	case INT8_T:
 		if (!is_dataconvert) {
@@ -225,14 +213,13 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v)
 	case STRING_T:
 		if (is_dataconvert) {
 			char **conv = (char **)property_info->dataconv;
-			if (strcmp(conv[x] , "NOTSET") != 0) {
-				if (property_info->curValue.string != conv[x]) {
+			if (property_info->curValue.string != conv[x]) {
 					property_info->curValue.string = conv[x];
+		
+				if (strcmp(conv[x], "NOTSET") != 0) {
 					update = 1;
-				}
-			} /* else 
-			   * 	if "NOTSET" value, not update
-			   */
+				} 
+			}
 		} else {
 			ERRMSG("Cannot string conversion: CAN-ID(%03X)#%s frame-Value:%d Check SET-DATA fileld", 
 				property_info->mycanid->canid,
@@ -246,7 +233,7 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v)
 			if (property_info->curValue.int32_val != conv[x]) {
 				property_info->curValue.int32_val = conv[x];
 
-				if (x != 0) /* effective value is 1 only */
+				if (x != 0) 
 					update = 1;
 			}
 		} else {
