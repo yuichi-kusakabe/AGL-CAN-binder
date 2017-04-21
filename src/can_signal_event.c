@@ -148,12 +148,9 @@ ERROR_RETURN:
 /* TO other ECU */
 void can_signal_send(struct can_bit_t *prop, unsigned int v)
 {
-	int ret;
 	pthread_mutex_lock(&frameLock);
-	ret = property2canframe(prop, v);
-	if (!ret) {
-		socketcan_send(&prop->mycanid->canraw_frame);
-	}
+	(void) property2canframe(prop, v);
+	socketcan_send(&prop->mycanid->canraw_frame);
 	pthread_mutex_unlock(&frameLock);
 }
 /*

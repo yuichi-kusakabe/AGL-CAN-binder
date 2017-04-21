@@ -215,10 +215,10 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v)
 			char **conv = (char **)property_info->dataconv;
 			if (property_info->curValue.string != conv[x]) {
 					property_info->curValue.string = conv[x];
-		
+
 				if (strcmp(conv[x], "NOTSET") != 0) {
 					update = 1;
-				} 
+				}
 			}
 		} else {
 			ERRMSG("Cannot string conversion: CAN-ID(%03X)#%s frame-Value:%d Check SET-DATA fileld", 
@@ -233,7 +233,7 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v)
 			if (property_info->curValue.int32_val != conv[x]) {
 				property_info->curValue.int32_val = conv[x];
 
-				if (x != 0) 
+				if (x != 0)
 					update = 1;
 			}
 		} else {
@@ -263,8 +263,10 @@ int property2canframe(struct can_bit_t *property_info, unsigned int value)
 	int update;
 	update = _updatePropertyValue(property_info, value);
 	if (!update) {
-		NOTICEMSG("%s property is not updated", property_info->name);
-		return 1;
+		WARNMSG("%s property is not updated", property_info->name);
+#if 0 /* FALLTHROTH */
+		return 0;
+#endif
 	}
 	can_v64 = ((uint64_t)value & can_mask64) << bit_shift;
 	can_curvalue  = canvalue2host(property_info->mycanid->canraw_frame.data);
