@@ -469,7 +469,7 @@ static int parse_recept_and_transmission(json_object *obj, unsigned int property
 		} else
 		if (strcmp(key,"EXTENDED") == 0) {
 //			err += parse_canid_def(val, readonlyProperties);
-			ERRMSG("json: EXTENDED block(Extend can frame) is not Supported.");
+			WARNMSG("json: EXTENDED block(Extend can frame) is not Supported.");
 		} else {
 			ERRMSG("json: Unknown key: \"%s\"",key);
 			++err;
