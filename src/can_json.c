@@ -378,10 +378,19 @@ static int parse_caninfo(jcanid_t canid, json_object *obj, unsigned int property
 
 	json_object_object_get_ex(obj, "CYCLE", &sub_obj);
 	if (sub_obj) {
-		canid_info->cycle = (unsigned int)json_object_get_int(sub_obj);
- 		if ((canid_info->cycle == 0) && (canid_info->mode == CAN_THINOUT_CHG))
- 			canid_info->cycle = 0xffffffff;
+		unsigned int cycle = (unsigned int)json_object_get_int(sub_obj);
+		if (canid_info->mode == CAN_THINOUT_CHG) {
+ 			canid_info->cycle = (cycle == 0) ? 0xffffffff : cycle;
+		} else {
+			if (cycle > 0)
+				WARNMSG("json: CAN-ID(%03X) : ignore CYCLE(%d), not CAH_THINOUT_CHG.",
+					(int)cycle,canid_info->canid);
+				/* canid_info->cycle = <alrady initialize by 0> */
+		}
 	}
+	/* else 
+ 	 *	canid_info->cycle = 0 == CAN_THINOUT_NON;
+	 */
 
 	json_object_object_get_ex(obj, "DLC", &sub_obj);
 	if (sub_obj) {
