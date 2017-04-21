@@ -47,27 +47,58 @@ static int update_iviproperty(uint64_t can_v64, struct can_bit_t *property_info,
 	unsigned int elaps = 0;
 	unsigned int thinout_cycle = property_info->mycanid->cycle;
 	struct can_bit_t *mark = NULL;
-	struct can_bit_t *p = property_info;
+	struct can_bit_t *p;
 	int multiProperty = 0;
+	int exclusiveChecker = 0;
+
+	struct can_bit_t *pre_exlProperty = NULL;
+	int pre_exlChecker = 0;
 
 	DBGMSG("update iviproperty(\"%s\") called", property_info->name);
 
-	while(p != NULL) {
+	for(p = property_info; p != NULL ; p = p->next) {
+		if (p->err_info & CAN_PROPERTY_ERR_CONFLICT) {
+			/* conflict error recovery. */
+			memset(&p->curValue, 0 , sizeof(p->curValue)); /* to initial */
+			p->err_info &= (unsigned int)(~CAN_PROPERTY_ERR_CONFLICT);
+		}
 		++multiProperty;
 		elaps = elaps_ms(&p->updatetime, timestamp);
-		ret = canframe2property(can_v64, p);
+		ret = canframe2property(can_v64, p, &exclusiveChecker);
+
+		/* Exclusive Property check */
+		if ( pre_exlChecker < exclusiveChecker) {
+			if (pre_exlProperty != NULL) {
+				WARNMSG("CAN-ID(%02x): %s properties update conflicted. {POS:%d OFFS:%d LEN:%d} vs {POS:%d OFFS:%d LEN:%d}",
+					property_info->mycanid->canid, property_info->name,
+					pre_exlProperty->byte_pos, pre_exlProperty->bit_pos, pre_exlProperty->bit_len,
+					p->byte_pos, p->bit_pos, p->bit_len
+				);
+				pre_exlProperty->err_info |= CAN_PROPERTY_ERR_CONFLICT;
+				p->err_info    |= CAN_PROPERTY_ERR_CONFLICT;
+			}
+			pre_exlProperty = p;
+			pre_exlChecker = exclusiveChecker;
+		}
+
+		/* property is update ? */
 		if (ret) {
+			/* property is updated */
+			if (mark != NULL) {
+				WARNMSG("CAN-ID(%02x): %s properties update conflict. Applied data {POS:%d OFFS:%d LEN:%d}",
+					property_info->mycanid->canid, property_info->name,
+					p->byte_pos, p->bit_pos, p->bit_len);
+			}
 			mark = p;
 			++update;
 			p->updatetime =  *timestamp;
 		} else {
+			/* property is NOT updated */
 			if ((mark == NULL) && (elaps >= thinout_cycle)) {
 				++update;
 				p->updatetime =  *timestamp;
-				mark = p;
 			}
 		}
-		p = p->next;
 	}
 
 
@@ -77,10 +108,8 @@ static int update_iviproperty(uint64_t can_v64, struct can_bit_t *property_info,
 			update ? "VALUE-updated":"not change",
 			elaps, thinout_cycle);
 		if (multiProperty > 1) {
-			if ( mark != property_info) {
-				property_info->updatetime =  *timestamp;
-				property_info->curValue = mark->curValue;
-			}
+			if (mark != NULL)
+				property_info->applyinfo = (mark == property_info) ? NULL : mark;
 		}
 		notify_property_changed(property_info);
 	} /* else

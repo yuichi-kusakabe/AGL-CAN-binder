@@ -102,7 +102,7 @@ void host2canvalue(uint64_t v,unsigned char *outdata)
 	outdata[0] = can_bigendian_data.b[7];
 }
 
-static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v)
+static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v, int *exclusiveChecker)
 {
 	unsigned int x = v;
 	int update = 0;
@@ -213,12 +213,16 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v)
 	case STRING_T:
 		if (is_dataconvert) {
 			char **conv = (char **)property_info->dataconv;
-			if (property_info->curValue.string != conv[x]) {
-					property_info->curValue.string = conv[x];
+			int notsetKey = strcmp(conv[x], "NOTSET");
 
-				if (strcmp(conv[x], "NOTSET") != 0) {
-					update = 1;
-				}
+			if (notsetKey && (exclusiveChecker != NULL)) {
+				int exn = *exclusiveChecker;
+				update = (exn > 0);
+				*exclusiveChecker = exn + 1;
+			}
+			if (property_info->curValue.string != conv[x]) {
+				property_info->curValue.string = conv[x];
+				update = (x != 0) ;
 			}
 		} else {
 			ERRMSG("Cannot string conversion: CAN-ID(%03X)#%s frame-Value:%d Check SET-DATA fileld", 
@@ -230,11 +234,14 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v)
 	case ENABLE1_T:
 		if (is_dataconvert) {
 			int *conv = (int *)property_info->dataconv;
+			if (x && (exclusiveChecker != NULL)) {
+				int exn = *exclusiveChecker;
+				update = (exn > 0);
+				*exclusiveChecker = exn + 1;
+			}
 			if (property_info->curValue.int32_val != conv[x]) {
 				property_info->curValue.int32_val = conv[x];
-
-				if (x != 0)
-					update = 1;
+				update = (x != 0) ;
 			}
 		} else {
 			ERRMSG("Cannot substitution-value conversion: CAN-ID(%03X)#%s frame-Value:%d Check SET-DATA fileld", 
@@ -261,7 +268,7 @@ int property2canframe(struct can_bit_t *property_info, unsigned int value)
 	uint64_t can_v64;
 	uint64_t can_curvalue;
 	int update;
-	update = _updatePropertyValue(property_info, value);
+	update = _updatePropertyValue(property_info, value, NULL);
 	if (!update) {
 		WARNMSG("%s property is not updated", property_info->name);
 #if 0 /* FALLTHROTH */
@@ -277,7 +284,7 @@ int property2canframe(struct can_bit_t *property_info, unsigned int value)
 	return 0;
 }
 
-int canframe2property(uint64_t can_v64, struct can_bit_t *property_info)
+int canframe2property(uint64_t can_v64, struct can_bit_t *property_info, int *exclusiveProperty)
 {
 	int update = 0;
 	uint64_t can_mask64;
@@ -286,7 +293,7 @@ int canframe2property(uint64_t can_v64, struct can_bit_t *property_info)
 	can_v64 = can_v64 >> bit_shift;
 	can_v64 &= can_mask64;
 
-	update = _updatePropertyValue(property_info, (uint32_t) can_v64);
+	update = _updatePropertyValue(property_info, (uint32_t) can_v64, exclusiveProperty);
 
 	return update; /* 0: NOT-Updated  1: UPdated */
 }

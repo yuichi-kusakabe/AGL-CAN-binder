@@ -525,6 +525,9 @@ struct json_object *property2json(struct can_bit_t *property)
 	if (property == NULL)
 		return NULL;
 
+	if (property->applyinfo != NULL)
+		return property2json(property->applyinfo);
+
 	jobj = json_object_new_object();
 	if (jobj == NULL)
 		return NULL;

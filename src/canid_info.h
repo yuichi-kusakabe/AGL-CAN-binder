@@ -50,6 +50,12 @@ union data_content_t	{
 	} array_values;
 };
 
+/* err_info values */
+enum {
+	CAN_PROPERTY_ERR_NON = 0,
+	CAN_PROPERTY_ERR_CONFLICT = 0x1
+};
+
 struct can_bit_t {
 	struct canid_info_t *mycanid;
 	const char * name;
@@ -64,10 +70,10 @@ struct can_bit_t {
 	unsigned int add_param;
 #endif
 	struct can_bit_t *next;
-
+	struct can_bit_t *applyinfo;
+	unsigned int err_info;
 	void *dataconv;
 	unsigned int   nconv;
-
 	struct timeval updatetime;
 	union data_content_t curValue;
 };
@@ -96,7 +102,7 @@ struct canid_info_t {
 
 extern const char * vartype2string(unsigned int t);
 extern int string2vartype(const char *varname);
-extern int canframe2property(uint64_t can_v64, struct can_bit_t *property_info);
+extern int canframe2property(uint64_t can_v64, struct can_bit_t *property_info, int *exclusiveChecker);
 extern int propertyValue_int(struct can_bit_t *property_info);
 extern int property2canframe(struct can_bit_t *property_info, unsigned int value);
 extern uint64_t canvalue2host(unsigned char *data);
