@@ -69,9 +69,19 @@ int notify_property_changed(struct can_bit_t *property_info)
 		int recved_client;
 		recved_client = afb_event_push(event->event, property2json(property_info));
 		if(recved_client < 1) {
-			ERRMSG("count of clients that received the event : %d",recved_client);
+			if(recved_client == 0) {
+				DBGMSG("event(\"%s\") is no client.", property_info->name);
+#ifdef ENABLE_EVENT_DROP
+				/* Drop event */
+				remove_event(property_info->name);
+#endif
+			} else {
+				ERRMSG("count of clients that received the event : %d",recved_client);
+			}
 			return 1;
-		}
+		} /* else  (1 <= recved_lient)
+		   *	NORMAL
+		   */
 	} else {
 		ERRMSG("event(\"%s\") is invalid. don't adb_event_push()", property_info->name);
 		return 1;
@@ -249,7 +259,7 @@ static int  subscribe_signal(struct afb_req req, const char *name, struct json_o
 			return 1;
 		}
 	} else {
-		DBGMSG("Duplicate require: %s", name);
+		DBGMSG("subscribe event: \"%s\" alrady exist", name);
 	}
 	if (afb_req_subscribe(req, event->event) != 0) {
 		ERRMSG("afb_req_subscrive() is failed.");
@@ -316,7 +326,6 @@ static int unsubscribe_signal(struct afb_req req, const char *name)
 		ERRMSG("afb_req_subscrive() is failed.");
 		return 1;
 	}
-	(void)remove_event(name);
 	return 0;
 }
 
