@@ -44,6 +44,7 @@ struct canivi_conf {
 	char *devname;
 };
 
+#define ENABLE_EVENT_DROP
 /*
  *  the interface to afb-damon
  */
@@ -320,7 +321,7 @@ static int unsubscribe_signal(struct afb_req req, const char *name)
 	event = get_event(name);
 	if (event == NULL) {
 		ERRMSG("not subscribed event \"%s\"", name);
-		return 0; /* Alrady unsubscribed */
+		return 1; /* Alrady unsubscribed */
 	}
 	if (afb_req_unsubscribe(req, event->event) != 0) {
 		ERRMSG("afb_req_subscrive() is failed.");
