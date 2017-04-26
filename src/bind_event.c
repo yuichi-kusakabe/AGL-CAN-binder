@@ -157,8 +157,9 @@ int remove_event(const char *name)
 	key.name = name;
 	p = tfind(&key, &bind_event_root, compare);
 	if (p == NULL)
-		return 0;
+		return 1;
 	dnode = *(struct bind_event_t **)p;
+	afb_event_drop(dnode->event);
 	tdelete(&key, &bind_event_root, compare);
 	free(dnode);
 
