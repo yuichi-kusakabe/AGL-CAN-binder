@@ -266,7 +266,7 @@ static int  subscribe_signal(struct afb_req req, const char *name, struct json_o
 		ERRMSG("afb_req_subscrive() is failed.");
 		return 1;
 	}
-	json_object_object_add(apply, event->name, json_object_new_int(0));
+	json_object_object_add(apply, event->name, property2json(event->raw_info));
 	return 0;
 }
 
