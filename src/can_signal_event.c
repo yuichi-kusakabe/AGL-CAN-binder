@@ -49,46 +49,32 @@ static int update_iviproperty(uint64_t can_v64, struct can_bit_t *property_info,
 	unsigned int thinout_cycle = property_info->mycanid->cycle;
 	struct can_bit_t *mark = NULL;
 	struct can_bit_t *p;
-	int multiProperty = 0;
-	int exclusiveChecker = 0;
-
-	struct can_bit_t *pre_exlProperty = NULL;
-	int pre_exlChecker = 0;
+	int is_multiProperty = 0;
+	int timeover = 0;
 
 	DBGMSG("update iviproperty(\"%s\") called", property_info->name);
 
-	for(p = property_info; p != NULL ; p = p->next) {
-		if (p->err_info & CAN_PROPERTY_ERR_CONFLICT) {
-			/* conflict error recovery. */
-			memset(&p->curValue, 0 , sizeof(p->curValue)); /* to initial */
-			p->err_info &= (unsigned int)(~CAN_PROPERTY_ERR_CONFLICT);
-		}
-		++multiProperty;
-		elaps = elaps_ms(&p->updatetime, timestamp);
-		ret = canframe2property(can_v64, p, &exclusiveChecker);
+	if (property_info->next != NULL) {
+		/* Reset exclusive-fileild value*/
+		struct can_bit_t *n;
 
-		/* Exclusive Property check */
-		if ( pre_exlChecker < exclusiveChecker) {
-			if (pre_exlProperty != NULL) {
-				WARNMSG("CAN-ID(%02x): %s properties update conflicted. {POS:%d OFFS:%d LEN:%d} vs {POS:%d OFFS:%d LEN:%d}",
-					property_info->mycanid->canid, property_info->name,
-					pre_exlProperty->byte_pos, pre_exlProperty->bit_pos, pre_exlProperty->bit_len,
-					p->byte_pos, p->bit_pos, p->bit_len
-				);
-				pre_exlProperty->err_info |= CAN_PROPERTY_ERR_CONFLICT;
-				p->err_info    |= CAN_PROPERTY_ERR_CONFLICT;
-			}
-			pre_exlProperty = p;
-			pre_exlChecker = exclusiveChecker;
-		}
+		is_multiProperty = 1;
+		for(n= property_info; n != NULL ; n = n->next)
+			memset(&n->curValue, 0 , sizeof(n->curValue)); /* to initial */
+	}
+
+	for(p = property_info; p != NULL ; p = p->next) {
+		elaps = elaps_ms(&p->updatetime, timestamp);
+		ret = canframe2property(can_v64, p);
 
 		/* property is update ? */
 		switch (ret) {
 		case UPSTAT_UPDATED: /* property is updated */
 			if (mark != NULL) {
-				WARNMSG("CAN-ID(%02x): %s properties update conflict. Applied data {POS:%d OFFS:%d LEN:%d}",
+				WARNMSG("CAN-ID(%02x): %s properties update conflict. Applied data {POS:%d OFFS:%d LEN:%d} ,ignore {POS:%d OFFS:%d LEN:%d}",
 					property_info->mycanid->canid, property_info->name,
-					p->byte_pos, p->bit_pos, p->bit_len);
+					p->byte_pos, p->bit_pos, p->bit_len,
+					mark->byte_pos, mark->bit_pos, mark->bit_len);
 			}
 			mark = p;
 			++update;
@@ -98,6 +84,7 @@ static int update_iviproperty(uint64_t can_v64, struct can_bit_t *property_info,
 			if ((mark == NULL) && (elaps >= thinout_cycle)) {
 				++update;
 				p->updatetime =  *timestamp;
+				++timeover;
 			}
 			break;
 		default: /* ERROR */
@@ -106,21 +93,25 @@ static int update_iviproperty(uint64_t can_v64, struct can_bit_t *property_info,
 			/* else
  			 *	  ret < 0 is error
  			 */
-			update = 0;
+			return 1;
 			break;
 		}
 	}
 
+	if (is_multiProperty) {
+		if (property_info->applyinfo != mark) {
+			property_info->applyinfo = (mark == property_info) ? NULL : mark;
+			++update;
+		} else
+		if (!timeover)
+			update = 0;
+	}
 
 	if (update) {
 		DBGMSG("	[%s] %s   [elaps:%d msec > (cycle)%d]",
 			property_info->name,
 			update ? "VALUE-updated":"not change",
 			elaps, thinout_cycle);
-		if (multiProperty > 1) {
-			if (mark != NULL)
-				property_info->applyinfo = (mark == property_info) ? NULL : mark;
-		}
 		notify_property_changed(property_info);
 	} /* else
  	   * 		same data in thinout_cycle. So ignore
