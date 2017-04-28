@@ -102,23 +102,33 @@ void host2canvalue(uint64_t v,unsigned char *outdata)
 	outdata[0] = can_bigendian_data.b[7];
 }
 
-static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v, int *exclusiveChecker)
+static update_stat_t _updatePropertyValue(struct can_bit_t *property_info, uint32_t v, int *exclusiveChecker)
 {
 	unsigned int x = v;
-	int update = 0;
-	const int is_dataconvert = ((property_info->dataconv != NULL) && (property_info->nconv > x ));
+	update_stat_t update = UPSTAT_NO_UPDATED;
+	const int is_dataconvert = (property_info->dataconv != NULL);
+
+	if  (is_dataconvert) {
+		if (property_info->nconv <= x ) {
+			ERRMSG("Undefined property value: CAN-ID(%03X)#%s property-value(%d) > convert-table size(%d) ",
+				property_info->mycanid->canid,
+				property_info->name,
+				x, property_info->nconv);
+			return UPSTAT_ERROR;
+		}
+	}
 	switch(property_info->var_type) {
 	case INT8_T:
 		if (!is_dataconvert) {
 			if (property_info->curValue.int8_val != (int8_t)x) {
 				property_info->curValue.int8_val = (int8_t)x;
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		} else {
 			int32_t *conv = (int32_t *)property_info->dataconv;
 			if (property_info->curValue.int8_val != (int8_t)conv[x]) {
 				property_info->curValue.int8_val = (int8_t)conv[x];
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		}
 		break;
@@ -126,13 +136,13 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v, int
 		if (!is_dataconvert) {
 			if (property_info->curValue.int16_val != (int16_t)x) {
 				property_info->curValue.int16_val = (int16_t)x;
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		} else {
 			int32_t *conv = (int32_t *)property_info->dataconv;
 			if (property_info->curValue.int16_val != (int16_t)conv[x]) {
 				property_info->curValue.int16_val = (int16_t)conv[x];
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		}
 		break;
@@ -142,13 +152,13 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v, int
 		if (!is_dataconvert) {
 			if (property_info->curValue.int32_val != (int32_t)x) {
 				property_info->curValue.int32_val = (int32_t)x;
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		} else {
 			int32_t *conv = (int32_t *)property_info->dataconv;
 			if (property_info->curValue.int32_val != conv[x]) {
 				property_info->curValue.int32_val = (int32_t)conv[x];
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		}
 		break;
@@ -156,13 +166,13 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v, int
 		if (!is_dataconvert) {
 			if (property_info->curValue.uint8_val != (int8_t)x) {
 				property_info->curValue.uint8_val = (uint8_t)x;
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		} else {
 			uint32_t *conv = (uint32_t *)property_info->dataconv;
 			if (property_info->curValue.uint8_val != (int8_t)conv[x]) {
 				property_info->curValue.uint8_val = (uint8_t)conv[x];
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		}
 		break;
@@ -170,13 +180,13 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v, int
 		if (!is_dataconvert) {
 			if (property_info->curValue.uint16_val != (uint16_t)x) {
 				property_info->curValue.uint16_val = (uint16_t)x;
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		} else {
 			uint32_t *conv = (uint32_t *)property_info->dataconv;
 			if (property_info->curValue.uint16_val != (int16_t)conv[x]) {
 				property_info->curValue.uint16_val = (uint16_t)conv[x];
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		}
 		break;
@@ -185,13 +195,13 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v, int
 		if (!is_dataconvert) {
 			if (property_info->curValue.uint32_val != (uint32_t)x) {
 				property_info->curValue.uint32_val = (uint32_t)x;
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		} else {
 			uint32_t *conv = (uint32_t *)property_info->dataconv;
 			if (property_info->curValue.uint32_val != conv[x]) {
 				property_info->curValue.uint32_val = conv[x];
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		}
 		break;
@@ -199,13 +209,13 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v, int
 		if (!is_dataconvert) {
 			if (property_info->curValue.bool_val != (!!x)) {
 				property_info->curValue.bool_val = !!x ;
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		} else  {
 			int *conv = (int *)property_info->dataconv;
 			if (property_info->curValue.bool_val != conv[x]) {
 				property_info->curValue.bool_val = !! conv[x];
-				update = 1;
+				update = UPSTAT_UPDATED;
 			}
 		}
 		break;
@@ -229,6 +239,7 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v, int
 				property_info->mycanid->canid,
 				property_info->name,
 				x);
+			update = UPSTAT_ERROR;
 		}
 		break;
 	case ENABLE1_T:
@@ -248,6 +259,7 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v, int
 				property_info->mycanid->canid,
 				property_info->name,
 				x);
+			update = UPSTAT_ERROR;
 		}
 		break;
 	default:
@@ -258,22 +270,26 @@ static int _updatePropertyValue(struct can_bit_t *property_info, uint32_t v, int
 		break;
 	}
 
-	return update; /* 0: NOT-Updated  1: UPdated */
+	return update; /* 0: NOT-Updated  1: UPdated -1: error*/
 }
 
-int property2canframe(struct can_bit_t *property_info, unsigned int value)
+update_stat_t property2canframe(struct can_bit_t *property_info, unsigned int value)
 {
 	const int bit_shift = ((BYTE_OF_FRAME - property_info->byte_pos) * BITS_OF_BYTE) + property_info->bit_pos;
 	uint64_t can_mask64 = (1ULL << property_info->bit_len)-1;
 	uint64_t can_v64;
 	uint64_t can_curvalue;
-	int update;
+	update_stat_t update;
 	update = _updatePropertyValue(property_info, value, NULL);
-	if (!update) {
+	switch(update) {
+	case UPSTAT_ERROR: /* error */
+		return update;
+		break;
+	case UPSTAT_NO_UPDATED: /* not updated */
 		WARNMSG("%s property is not updated", property_info->name);
-#if 0 /* FALLTHROTH */
-		return 0;
-#endif
+		/* FALLTHROUGH */
+	default: /* UPSTAT_UPDATED */
+		break;
 	}
 	can_v64 = ((uint64_t)value & can_mask64) << bit_shift;
 	can_curvalue  = canvalue2host(property_info->mycanid->canraw_frame.data);
@@ -281,12 +297,12 @@ int property2canframe(struct can_bit_t *property_info, unsigned int value)
 	can_curvalue |= can_v64;
 	
 	host2canvalue(can_curvalue, property_info->mycanid->canraw_frame.data);
-	return 0;
+	return update;
 }
 
-int canframe2property(uint64_t can_v64, struct can_bit_t *property_info, int *exclusiveProperty)
+update_stat_t canframe2property(uint64_t can_v64, struct can_bit_t *property_info, int *exclusiveProperty)
 {
-	int update = 0;
+	update_stat_t update;
 	uint64_t can_mask64;
 	const int bit_shift = ((BYTE_OF_FRAME - property_info->byte_pos) * BITS_OF_BYTE) + property_info->bit_pos;
 	can_mask64 = (1ULL << property_info->bit_len)-1;
@@ -295,7 +311,7 @@ int canframe2property(uint64_t can_v64, struct can_bit_t *property_info, int *ex
 
 	update = _updatePropertyValue(property_info, (uint32_t) can_v64, exclusiveProperty);
 
-	return update; /* 0: NOT-Updated  1: UPdated */
+	return update; /* 0: NOT-Updated  1: UPdated  -1: Error*/
 }
 
 int propertyValue_int(struct can_bit_t *property_info) 

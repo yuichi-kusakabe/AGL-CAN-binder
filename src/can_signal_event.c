@@ -43,7 +43,8 @@ static unsigned int elaps_ms(struct timeval *old, struct timeval *new)
 
 static int update_iviproperty(uint64_t can_v64, struct can_bit_t *property_info, struct timeval *timestamp)
 {
-	int ret, update = 0;
+	update_stat_t ret;
+	int update = 0;
 	unsigned int elaps = 0;
 	unsigned int thinout_cycle = property_info->mycanid->cycle;
 	struct can_bit_t *mark = NULL;
@@ -82,8 +83,8 @@ static int update_iviproperty(uint64_t can_v64, struct can_bit_t *property_info,
 		}
 
 		/* property is update ? */
-		if (ret) {
-			/* property is updated */
+		switch (ret) {
+		case UPSTAT_UPDATED: /* property is updated */
 			if (mark != NULL) {
 				WARNMSG("CAN-ID(%02x): %s properties update conflict. Applied data {POS:%d OFFS:%d LEN:%d}",
 					property_info->mycanid->canid, property_info->name,
@@ -92,12 +93,21 @@ static int update_iviproperty(uint64_t can_v64, struct can_bit_t *property_info,
 			mark = p;
 			++update;
 			p->updatetime =  *timestamp;
-		} else {
-			/* property is NOT updated */
+			break;
+		case  UPSTAT_NO_UPDATED: /* property is NOT updated */
 			if ((mark == NULL) && (elaps >= thinout_cycle)) {
 				++update;
 				p->updatetime =  *timestamp;
 			}
+			break;
+		default: /* ERROR */
+			if (ret > 0)
+				ERRMSG("Internal error: invalid canframe2property() return:%d", ret);
+			/* else
+ 			 *	  ret < 0 is error
+ 			 */
+			update = 0;
+			break;
 		}
 	}
 
@@ -177,9 +187,14 @@ ERROR_RETURN:
 /* TO other ECU */
 void can_signal_send(struct can_bit_t *prop, unsigned int v)
 {
+	update_stat_t ret;
 	pthread_mutex_lock(&frameLock);
-	(void) property2canframe(prop, v);
-	socketcan_send(&prop->mycanid->canraw_frame);
+	ret = property2canframe(prop, v);
+	if (ret != UPSTAT_ERROR)
+		socketcan_send(&prop->mycanid->canraw_frame);
+	/* else
+ 	 *		error. not send.
+ 	 */
 	pthread_mutex_unlock(&frameLock);
 }
 /*

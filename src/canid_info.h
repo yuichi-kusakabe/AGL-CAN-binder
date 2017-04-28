@@ -99,12 +99,12 @@ struct canid_info_t {
 	struct can_bit_t property[0];
 	/* This is variable structure */
 };
-
+typedef enum { UPSTAT_ERROR = -1, UPSTAT_NO_UPDATED = 0, UPSTAT_UPDATED = 1 } update_stat_t;
 extern const char * vartype2string(unsigned int t);
 extern int string2vartype(const char *varname);
-extern int canframe2property(uint64_t can_v64, struct can_bit_t *property_info, int *exclusiveChecker);
+extern update_stat_t canframe2property(uint64_t can_v64, struct can_bit_t *property_info, int *exclusiveChecker);
 extern int propertyValue_int(struct can_bit_t *property_info);
-extern int property2canframe(struct can_bit_t *property_info, unsigned int value);
+extern update_stat_t property2canframe(struct can_bit_t *property_info, unsigned int value);
 extern uint64_t canvalue2host(unsigned char *data);
 extern void host2canvalue(uint64_t v,unsigned char *outdata);
 #endif
