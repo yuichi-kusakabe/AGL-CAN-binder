@@ -50,7 +50,7 @@ static int update_iviproperty(uint64_t can_v64, struct can_bit_t *property_info,
 	struct can_bit_t *mark = NULL;
 	struct can_bit_t *p;
 	int is_multiProperty = 0;
-	int timeover = 0;
+	union data_content_t pre_apValue;
 
 	DBGMSG("update iviproperty(\"%s\") called", property_info->name);
 
@@ -59,12 +59,18 @@ static int update_iviproperty(uint64_t can_v64, struct can_bit_t *property_info,
 		struct can_bit_t *n;
 
 		is_multiProperty = 1;
+		if (property_info->applyinfo != NULL) {
+			pre_apValue = property_info->applyinfo->curValue;
+		} else {
+			memset(&pre_apValue, 0, sizeof(pre_apValue));
+		}
+
 		for(n= property_info; n != NULL ; n = n->next)
 			memset(&n->curValue, 0 , sizeof(n->curValue)); /* to initial */
 	}
 
+	elaps = elaps_ms(&property_info->updatetime, timestamp);
 	for(p = property_info; p != NULL ; p = p->next) {
-		elaps = elaps_ms(&p->updatetime, timestamp);
 		ret = canframe2property(can_v64, p);
 
 		/* property is update ? */
@@ -78,13 +84,13 @@ static int update_iviproperty(uint64_t can_v64, struct can_bit_t *property_info,
 			}
 			mark = p;
 			++update;
-			p->updatetime =  *timestamp;
+			if (!is_multiProperty)
+				p->updatetime =  *timestamp;
 			break;
 		case  UPSTAT_NO_UPDATED: /* property is NOT updated */
-			if ((mark == NULL) && (elaps >= thinout_cycle)) {
+			if ((!is_multiProperty) && (elaps >= thinout_cycle)) {
 				++update;
 				p->updatetime =  *timestamp;
-				++timeover;
 			}
 			break;
 		default: /* ERROR */
@@ -99,16 +105,33 @@ static int update_iviproperty(uint64_t can_v64, struct can_bit_t *property_info,
 	}
 
 	if (is_multiProperty) {
-		if (property_info->applyinfo != mark) {
-			property_info->applyinfo = (mark == property_info) ? NULL : mark;
-			++update;
+		if (mark == NULL) {
+			/* NOT updated anything. */
+			if (elaps >= thinout_cycle) {
+				++update;
+				property_info->updatetime = *timestamp;
+			}
 		} else
-		if (!timeover)
-			update = 0;
+		if (property_info->applyinfo != mark) {
+			/* Applied propety is changed */
+			property_info->applyinfo = mark;
+			++update;
+			property_info->updatetime = *timestamp;
+			mark->updatetime = *timestamp;
+		} else {
+			/* Applied propety is same and applyinfo is !NULL */
+			int check = memcmp(&mark->curValue, &pre_apValue, sizeof(pre_apValue));
+			if ((check != 0) || (elaps >= thinout_cycle)) {
+				++update;
+				property_info->updatetime = *timestamp;
+			} else {
+				update = 0;
+			}
+		}
 	}
 
 	if (update) {
-		DBGMSG("	[%s] %s   [elaps:%d msec > (cycle)%d]",
+		DBGMSG("	[%s] %s   [elaps:%d msec > (cycle)%u]",
 			property_info->name,
 			update ? "VALUE-updated":"not change",
 			elaps, thinout_cycle);
