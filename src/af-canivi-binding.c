@@ -263,7 +263,7 @@ static int  subscribe_signal(struct afb_req req, const char *name, struct json_o
 		DBGMSG("subscribe event: \"%s\" alrady exist", name);
 	}
 	if (afb_req_subscribe(req, event->event) != 0) {
-		ERRMSG("afb_req_subscrive() is failed.");
+		ERRMSG("afb_req_subscribe() is failed.");
 		return 1;
 	}
 	json_object_object_add(apply, event->name, property2json(event->raw_info));
@@ -292,7 +292,7 @@ static void subscribe(struct afb_req req)
 	
 	event = afb_req_value(req, "event");
 	if (event == NULL) {
-		ERRMSG("Unknwon subscrive event args");
+		ERRMSG("Unknwon subscribe event args");
 		afb_req_fail(req, "error", NULL);
 		return;
 	}
@@ -324,7 +324,7 @@ static int unsubscribe_signal(struct afb_req req, const char *name)
 		return 1; /* Alrady unsubscribed */
 	}
 	if (afb_req_unsubscribe(req, event->event) != 0) {
-		ERRMSG("afb_req_subscrive() is failed.");
+		ERRMSG("afb_req_subscribe() is failed.");
 		return 1;
 	}
 	return 0;
