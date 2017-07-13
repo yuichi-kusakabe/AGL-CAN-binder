@@ -220,9 +220,12 @@ int can_signal_read(int fd, struct can_signal_t *out)
 	struct can_frame frame;
 	struct timeval tstamp;
 	int err;
-	
-	while( (err = socketcan_read(fd, &frame, &tstamp)) == 0)
+	int read_max=0;
+	while( (err = socketcan_read(fd, &frame, &tstamp)) == 0) {
 		parse_frame(&frame, &tstamp);
+		if (++read_max > 5)
+			break;
+	}
 	
 	return 0;
 }
